@@ -1,0 +1,1827 @@
+html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="100以内加减法口算练习网页应用，支持计时、错题回顾和键盘操作。">
+  <meta name="theme-color" content="#f7fbff">
+  <title>100以内加减法口算练习</title>
+  <style>
+    :root {
+      --bg: #f7fbff;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #6a7485;
+      --line: #dce7f4;
+      --blue: #2f6fed;
+      --blue-dark: #1f57c7;
+      --mint: #20b486;
+      --rose: #e34d59;
+      --amber: #f5a524;
+      --shadow: 0 24px 70px rgba(43, 76, 126, 0.14);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif;
+      background:
+        linear-gradient(135deg, rgba(47, 111, 237, 0.08), transparent 36%),
+        linear-gradient(315deg, rgba(32, 180, 134, 0.10), transparent 42%),
+        var(--bg);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    .page {
+      width: min(100%, 980px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 28px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 900;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--blue), var(--mint));
+      box-shadow: 0 12px 28px rgba(47, 111, 237, 0.22);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 36px);
+      letter-spacing: 0;
+      line-height: 1.12;
+    }
+
+    .subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .restart,
+    .user-page-btn {
+      flex: 0 0 auto;
+      padding: 11px 16px;
+      color: var(--blue-dark);
+      font-weight: 700;
+      border: 1px solid rgba(47, 111, 237, 0.22);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      box-shadow: 0 10px 28px rgba(43, 76, 126, 0.10);
+    }
+
+    .restart:hover,
+    .user-page-btn:hover {
+      background: #ffffff;
+      box-shadow: 0 14px 34px rgba(43, 76, 126, 0.15);
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(220, 231, 244, 0.92);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+    }
+
+    .view-hidden {
+      display: none !important;
+    }
+
+    .practice {
+      padding: clamp(20px, 4.2vw, 40px);
+    }
+
+    .progress-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 5px;
+      width: var(--progress, 0%);
+      background: linear-gradient(90deg, var(--blue), var(--mint));
+      transition: width 260ms ease;
+    }
+
+    .start-screen {
+      min-height: 520px;
+      display: grid;
+      place-items: center;
+      padding: clamp(10px, 3vw, 24px);
+      text-align: center;
+    }
+
+    .start-screen.hidden {
+      display: none;
+    }
+
+    .start-content {
+      width: min(100%, 560px);
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+    }
+
+    .start-kicker {
+      padding: 7px 13px;
+      color: var(--blue-dark);
+      font-size: 14px;
+      font-weight: 900;
+      border-radius: 999px;
+      background: rgba(47, 111, 237, 0.10);
+    }
+
+    .start-content h2 {
+      margin: 0;
+      font-size: clamp(34px, 7vw, 58px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .start-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(16px, 2.8vw, 20px);
+      line-height: 1.7;
+    }
+
+    .start-facts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 9px;
+    }
+
+    .start-facts span {
+      padding: 8px 12px;
+      color: #415167;
+      font-size: 14px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f9fcff;
+    }
+
+    .count-picker {
+      width: min(100%, 380px);
+      display: grid;
+      gap: 10px;
+    }
+
+    .count-picker-label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .count-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f8fbff;
+    }
+
+    .count-option {
+      min-height: 46px;
+      color: #415167;
+      font-weight: 900;
+      border-radius: 12px;
+      background: transparent;
+    }
+
+    .count-option.active {
+      color: #ffffff;
+      background: var(--blue);
+      box-shadow: 0 10px 22px rgba(47, 111, 237, 0.22);
+    }
+
+    .start-button {
+      min-width: min(100%, 260px);
+      min-height: 62px;
+      padding: 0 28px;
+      border-radius: 16px;
+      font-size: 20px;
+    }
+
+    .quiz-content.hidden {
+      display: none;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: clamp(26px, 5vw, 46px);
+    }
+
+    .stat {
+      min-height: 76px;
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f9fcff;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .stat strong {
+      font-size: clamp(18px, 3vw, 25px);
+      line-height: 1;
+    }
+
+    .question-zone {
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      text-align: center;
+    }
+
+    .question-label {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .question {
+      width: min(100%, 640px);
+      min-height: 136px;
+      display: grid;
+      place-items: center;
+      padding: 18px 20px;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(47, 111, 237, 0.06), transparent),
+        #f8fbff;
+      border: 1px solid var(--line);
+      color: #101827;
+      font-size: clamp(52px, 12vw, 98px);
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    .answer-row {
+      width: min(100%, 430px);
+      display: grid;
+      gap: 9px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .answer {
+      width: 100%;
+      height: 62px;
+      padding: 0 18px;
+      color: var(--ink);
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      border: 2px solid #cfddec;
+      border-radius: 15px;
+      outline: none;
+      background: #ffffff;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .answer:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 5px rgba(47, 111, 237, 0.14);
+    }
+
+    .feedback {
+      min-height: 28px;
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .feedback.ok {
+      color: var(--mint);
+    }
+
+    .feedback.bad {
+      color: var(--rose);
+    }
+
+    .actions {
+      margin-top: clamp(22px, 4vw, 34px);
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 12px;
+    }
+
+    .primary,
+    .secondary {
+      min-height: 56px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .primary {
+      color: #ffffff;
+      background: var(--blue);
+      box-shadow: 0 16px 34px rgba(47, 111, 237, 0.28);
+    }
+
+    .primary:hover {
+      background: var(--blue-dark);
+      box-shadow: 0 18px 40px rgba(47, 111, 237, 0.34);
+    }
+
+    .secondary {
+      color: #4d5b6f;
+      background: #edf4fb;
+      border: 1px solid #d5e2ef;
+    }
+
+    .secondary:hover {
+      background: #e5eef8;
+    }
+
+    .hint {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .result {
+      display: none;
+      padding: clamp(22px, 4.4vw, 42px);
+    }
+
+    .result.active {
+      display: block;
+    }
+
+    .practice.hidden {
+      display: none;
+    }
+
+    .result-head {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    .badge {
+      justify-self: center;
+      padding: 8px 14px;
+      color: #075f49;
+      font-weight: 900;
+      border-radius: 999px;
+      background: rgba(32, 180, 134, 0.14);
+    }
+
+    .result h2 {
+      margin: 0;
+      font-size: clamp(28px, 6vw, 46px);
+      letter-spacing: 0;
+    }
+
+    .result-remark {
+      width: min(100%, 560px);
+      justify-self: center;
+      padding: 15px 20px;
+      border: 1px solid transparent;
+      border-radius: 16px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .result-remark.perfect {
+      color: #087a55;
+      background: #e9fbf3;
+      border-color: #b9eed7;
+    }
+
+    .result-remark.near {
+      color: #9a6b00;
+      background: #fff8d8;
+      border-color: #f2df88;
+    }
+
+    .result-remark.steady {
+      color: #b45309;
+      background: #fff1dd;
+      border-color: #f5c489;
+    }
+
+    .result-remark.low {
+      color: #c8323d;
+      background: #ffe9ec;
+      border-color: #f5b9c0;
+    }
+
+    .result-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0 0 24px;
+    }
+
+    .summary-item {
+      min-height: 86px;
+      display: grid;
+      align-content: center;
+      gap: 7px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f9fcff;
+      text-align: center;
+    }
+
+    .summary-item span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .summary-item strong {
+      font-size: clamp(22px, 4vw, 32px);
+      line-height: 1;
+    }
+
+    .review-title {
+      margin: 4px 0 12px;
+      font-size: 20px;
+    }
+
+    .review-list {
+      display: grid;
+      gap: 10px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .review-empty {
+      padding: 18px;
+      color: #075f49;
+      font-weight: 800;
+      border: 1px solid rgba(32, 180, 134, 0.22);
+      border-radius: 14px;
+      background: rgba(32, 180, 134, 0.09);
+      text-align: center;
+    }
+
+    .review-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid #f0cbd0;
+      border-radius: 14px;
+      background: #fff8f9;
+    }
+
+    .review-card.skipped {
+      border-color: #f7ddb0;
+      background: #fffaf0;
+    }
+
+    .review-index {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      font-weight: 900;
+      border-radius: 11px;
+      background: var(--rose);
+    }
+
+    .review-card.skipped .review-index {
+      background: var(--amber);
+    }
+
+    .review-main {
+      min-width: 0;
+    }
+
+    .review-question {
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .review-answer {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .review-tag {
+      padding: 7px 10px;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 900;
+      border-radius: 999px;
+      background: var(--rose);
+      white-space: nowrap;
+    }
+
+    .review-card.skipped .review-tag {
+      background: var(--amber);
+      color: #5b3b00;
+    }
+
+    .result-actions {
+      margin-top: 22px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .result-actions .primary {
+      width: min(100%, 320px);
+    }
+
+    .user-panel {
+      display: none;
+      padding: clamp(22px, 4.4vw, 42px);
+    }
+
+    .user-panel.active {
+      display: block;
+    }
+
+    .user-head,
+    .history-head,
+    .detail-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .user-head h2,
+    .detail-head h3 {
+      margin: 8px 0 6px;
+      font-size: clamp(28px, 5vw, 42px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .user-head p,
+    .detail-meta {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .small-action {
+      min-height: 42px;
+      padding: 0 14px;
+      color: #42526a;
+      font-weight: 900;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f3f8fe;
+      white-space: nowrap;
+    }
+
+    .user-card {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 26px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f9fcff;
+    }
+
+    .username-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .username-input {
+      min-width: 0;
+      height: 50px;
+      padding: 0 14px;
+      color: var(--ink);
+      font-size: 18px;
+      font-weight: 800;
+      border: 2px solid #cfddec;
+      border-radius: 13px;
+      outline: none;
+      background: #ffffff;
+    }
+
+    .username-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 5px rgba(47, 111, 237, 0.12);
+    }
+
+    .user-message {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .history-head {
+      align-items: center;
+    }
+
+    .history-head h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-empty {
+      padding: 20px;
+      color: var(--muted);
+      font-weight: 800;
+      border: 1px dashed #cbd9ea;
+      border-radius: 14px;
+      background: #f9fcff;
+      text-align: center;
+    }
+
+    .history-item {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: #ffffff;
+      text-align: left;
+    }
+
+    .history-item:hover {
+      border-color: rgba(47, 111, 237, 0.36);
+      box-shadow: 0 12px 28px rgba(43, 76, 126, 0.10);
+    }
+
+    .history-title {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .history-sub {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .history-score {
+      display: grid;
+      justify-items: end;
+      gap: 4px;
+      color: var(--blue-dark);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .history-score span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .record-detail {
+      display: none;
+      margin-top: 24px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .record-detail.active {
+      display: block;
+    }
+
+    .detail-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .detail-review {
+      display: grid;
+      gap: 10px;
+    }
+
+    .correct-flash {
+      animation: correctFlash 520ms ease;
+    }
+
+    .wrong-shake {
+      animation: wrongShake 460ms ease;
+    }
+
+    .wrong-shake .answer {
+      border-color: var(--rose);
+      background: #fff8f9;
+    }
+
+    @keyframes correctFlash {
+      0% {
+        box-shadow: var(--shadow);
+      }
+
+      35% {
+        border-color: rgba(32, 180, 134, 0.72);
+        box-shadow: 0 0 0 8px rgba(32, 180, 134, 0.15), var(--shadow);
+        background: rgba(244, 255, 251, 0.96);
+      }
+
+      100% {
+        box-shadow: var(--shadow);
+      }
+    }
+
+    @keyframes wrongShake {
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      18% {
+        transform: translateX(-10px);
+      }
+
+      36% {
+        transform: translateX(9px);
+      }
+
+      54% {
+        transform: translateX(-7px);
+      }
+
+      72% {
+        transform: translateX(5px);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        justify-content: flex-start;
+        padding-top: 18px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .top-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .stats,
+      .result-summary,
+      .detail-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .question {
+        min-height: 118px;
+      }
+
+      .actions {
+        grid-template-columns: 1fr;
+      }
+
+      .review-card {
+        grid-template-columns: auto 1fr;
+      }
+
+      .review-tag {
+        grid-column: 2;
+        justify-self: start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topbar {
+        flex-direction: column;
+      }
+
+      .top-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .restart,
+      .user-page-btn {
+        width: 100%;
+      }
+
+      .practice,
+      .result,
+      .user-panel {
+        padding: 18px;
+      }
+
+      .user-head,
+      .detail-head {
+        display: grid;
+      }
+
+      .username-row,
+      .history-item {
+        grid-template-columns: 1fr;
+      }
+
+      .history-score {
+        justify-items: start;
+      }
+
+      .stat,
+      .summary-item {
+        min-height: 72px;
+        padding: 11px;
+      }
+
+      .question {
+        font-size: clamp(42px, 15vw, 64px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">±</div>
+        <div>
+          <h1>100以内加减法口算</h1>
+          <p class="subtitle">可选20、60、100题，当前用户：<span id="currentUserText">小练习者</span></p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="user-page-btn" id="userPageBtn" type="button">用户页</button>
+        <button class="restart" id="restartTop" type="button">重新开始</button>
+      </div>
+    </header>
+
+    <section class="panel practice" id="practicePanel" aria-live="polite">
+      <div class="progress-line" id="progressLine"></div>
+
+      <div class="start-screen" id="startScreen">
+        <div class="start-content">
+          <div class="start-kicker">准备好再开始</div>
+          <h2 id="startTitle">20道题计时挑战</h2>
+          <p class="start-copy">点击开始后生成第一题并启动计时器。中途可以重新开始，结束后会显示成绩和错题回顾。</p>
+          <div class="start-facts" aria-label="练习规则">
+            <span>100以内加减法</span>
+            <span>不出 0 结果</span>
+            <span>答对 +10 分</span>
+            <span>Enter 提交</span>
+            <span>Space 跳过</span>
+          </div>
+          <div class="count-picker">
+            <div class="count-picker-label">选择这一组的题目数</div>
+            <div class="count-options" id="countOptions" role="group" aria-label="选择练习题目数">
+              <button class="count-option active" type="button" data-count="20">20题</button>
+              <button class="count-option" type="button" data-count="60">60题</button>
+              <button class="count-option" type="button" data-count="100">100题</button>
+            </div>
+          </div>
+          <button class="primary start-button" id="startBtn" type="button">开始练习</button>
+        </div>
+      </div>
+
+      <div class="quiz-content hidden" id="quizContent">
+        <div class="stats" aria-label="练习统计">
+          <div class="stat">
+            <span>得分</span>
+            <strong id="scoreText">0</strong>
+          </div>
+          <div class="stat">
+            <span>当前题号</span>
+            <strong id="questionNumber">1 / 20</strong>
+          </div>
+          <div class="stat">
+            <span>剩余题目</span>
+            <strong id="remainingText">20</strong>
+          </div>
+          <div class="stat">
+            <span>用时</span>
+            <strong id="timerText">00:00</strong>
+          </div>
+        </div>
+
+        <div class="question-zone">
+          <div class="question-label" id="questionLabel">请计算下面这道题</div>
+          <div class="question" id="questionText">0 + 0</div>
+
+          <div class="answer-row">
+            <label for="answerInput">你的答案</label>
+            <input class="answer" id="answerInput" type="number" inputmode="numeric" autocomplete="off" placeholder="输入答案">
+          </div>
+
+          <div class="feedback" id="feedbackText">按回车提交，按空格跳过</div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="submitBtn" type="button">提交答案</button>
+          <button class="secondary" id="skipBtn" type="button">跳过本题</button>
+        </div>
+        <p class="hint">键盘支持：Enter 提交，Space 跳过</p>
+      </div>
+    </section>
+
+    <section class="panel result" id="resultPanel" aria-live="polite">
+      <div class="result-head">
+        <div class="badge" id="resultBadge">练习完成</div>
+        <h2 class="result-remark" id="resultTitle">这组题完成啦</h2>
+      </div>
+
+      <div class="result-summary" aria-label="成绩统计">
+        <div class="summary-item">
+          <span>总分</span>
+          <strong id="finalScore">0</strong>
+        </div>
+        <div class="summary-item">
+          <span>正确率</span>
+          <strong id="accuracyText">0%</strong>
+        </div>
+        <div class="summary-item">
+          <span>总用时</span>
+          <strong id="finalTime">00:00</strong>
+        </div>
+        <div class="summary-item">
+          <span>错 / 跳</span>
+          <strong id="missedText">0 / 0</strong>
+        </div>
+      </div>
+
+      <h3 class="review-title">错题回顾</h3>
+      <div class="review-list" id="reviewList"></div>
+
+      <div class="result-actions">
+        <button class="primary" id="restartResult" type="button">再练一组</button>
+      </div>
+    </section>
+
+    <section class="panel user-panel" id="userPanel" aria-live="polite">
+      <div class="user-head">
+        <div>
+          <div class="badge">用户页面</div>
+          <h2>练习档案</h2>
+          <p>用户名和练习记录会保存在当前浏览器中，换一个用户名会看到对应的历史记录。</p>
+        </div>
+        <button class="small-action" id="backPracticeBtn" type="button">返回练习</button>
+      </div>
+
+      <div class="user-card">
+        <label for="usernameInput">自定义用户名</label>
+        <div class="username-row">
+          <input class="username-input" id="usernameInput" type="text" maxlength="20" autocomplete="nickname" placeholder="输入用户名">
+          <button class="primary" id="saveUserBtn" type="button">保存用户名</button>
+        </div>
+        <div class="user-message" id="userMessage">当前练习会记录到这个用户名下面。</div>
+      </div>
+
+      <div class="history-head">
+        <h3>过往练习记录</h3>
+        <div class="detail-meta" id="historyCountText">0 条记录</div>
+      </div>
+
+      <div class="history-list" id="historyList"></div>
+
+      <div class="record-detail" id="recordDetail">
+        <div class="detail-head">
+          <div>
+            <div class="badge" id="detailBadge">记录详情</div>
+            <h3 id="detailTitle">练习记录</h3>
+            <p class="detail-meta" id="detailMeta"></p>
+          </div>
+          <button class="small-action" id="closeDetailBtn" type="button">收起详情</button>
+        </div>
+
+        <div class="detail-summary" aria-label="记录详情统计">
+          <div class="summary-item">
+            <span>总分</span>
+            <strong id="detailScore">0</strong>
+          </div>
+          <div class="summary-item">
+            <span>正确率</span>
+            <strong id="detailAccuracy">0%</strong>
+          </div>
+          <div class="summary-item">
+            <span>用时</span>
+            <strong id="detailTime">00:00</strong>
+          </div>
+          <div class="summary-item">
+            <span>错 / 跳</span>
+            <strong id="detailMissed">0 / 0</strong>
+          </div>
+        </div>
+
+        <h3 class="review-title">错题与跳题</h3>
+        <div class="detail-review" id="detailReview"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // 基础配置：用户可选择20、60、100题，每答对一题加10分。
+    const DEFAULT_QUESTION_COUNT = 20;
+    const SCORE_PER_CORRECT = 10;
+    const DEFAULT_USERNAME = "小练习者";
+    const STORAGE_KEYS = {
+      username: "mentalMath100.username",
+      records: "mentalMath100.records"
+    };
+
+    const state = {
+      currentIndex: 0,
+      score: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      skippedCount: 0,
+      totalQuestions: DEFAULT_QUESTION_COUNT,
+      currentProblem: null,
+      reviewItems: [],
+      startTime: 0,
+      elapsedMs: 0,
+      timerId: null,
+      transitionTimerId: null,
+      audioContext: null,
+      username: DEFAULT_USERNAME,
+      records: [],
+      isStarted: false,
+      isLocked: false
+    };
+
+    const els = {
+      practicePanel: document.getElementById("practicePanel"),
+      resultPanel: document.getElementById("resultPanel"),
+      startScreen: document.getElementById("startScreen"),
+      quizContent: document.getElementById("quizContent"),
+      startTitle: document.getElementById("startTitle"),
+      countOptions: document.getElementById("countOptions"),
+      progressLine: document.getElementById("progressLine"),
+      scoreText: document.getElementById("scoreText"),
+      questionNumber: document.getElementById("questionNumber"),
+      remainingText: document.getElementById("remainingText"),
+      timerText: document.getElementById("timerText"),
+      questionLabel: document.getElementById("questionLabel"),
+      questionText: document.getElementById("questionText"),
+      answerInput: document.getElementById("answerInput"),
+      feedbackText: document.getElementById("feedbackText"),
+      startBtn: document.getElementById("startBtn"),
+      submitBtn: document.getElementById("submitBtn"),
+      skipBtn: document.getElementById("skipBtn"),
+      currentUserText: document.getElementById("currentUserText"),
+      userPageBtn: document.getElementById("userPageBtn"),
+      userPanel: document.getElementById("userPanel"),
+      backPracticeBtn: document.getElementById("backPracticeBtn"),
+      usernameInput: document.getElementById("usernameInput"),
+      saveUserBtn: document.getElementById("saveUserBtn"),
+      userMessage: document.getElementById("userMessage"),
+      historyCountText: document.getElementById("historyCountText"),
+      historyList: document.getElementById("historyList"),
+      recordDetail: document.getElementById("recordDetail"),
+      detailBadge: document.getElementById("detailBadge"),
+      detailTitle: document.getElementById("detailTitle"),
+      detailMeta: document.getElementById("detailMeta"),
+      detailScore: document.getElementById("detailScore"),
+      detailAccuracy: document.getElementById("detailAccuracy"),
+      detailTime: document.getElementById("detailTime"),
+      detailMissed: document.getElementById("detailMissed"),
+      detailReview: document.getElementById("detailReview"),
+      closeDetailBtn: document.getElementById("closeDetailBtn"),
+      restartTop: document.getElementById("restartTop"),
+      restartResult: document.getElementById("restartResult"),
+      finalScore: document.getElementById("finalScore"),
+      accuracyText: document.getElementById("accuracyText"),
+      finalTime: document.getElementById("finalTime"),
+      missedText: document.getElementById("missedText"),
+      resultTitle: document.getElementById("resultTitle"),
+      resultBadge: document.getElementById("resultBadge"),
+      reviewList: document.getElementById("reviewList")
+    };
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function canUseLocalStorage() {
+      try {
+        const testKey = "mentalMath100.test";
+        window.localStorage.setItem(testKey, "1");
+        window.localStorage.removeItem(testKey);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    const storageAvailable = canUseLocalStorage();
+
+    function loadUsername() {
+      if (!storageAvailable) {
+        return DEFAULT_USERNAME;
+      }
+
+      const savedName = window.localStorage.getItem(STORAGE_KEYS.username);
+      return savedName && savedName.trim() ? savedName.trim() : DEFAULT_USERNAME;
+    }
+
+    function saveUsername(name) {
+      if (storageAvailable) {
+        window.localStorage.setItem(STORAGE_KEYS.username, name);
+      }
+    }
+
+    function loadRecords() {
+      if (!storageAvailable) {
+        return [];
+      }
+
+      try {
+        const rawRecords = window.localStorage.getItem(STORAGE_KEYS.records);
+        const records = rawRecords ? JSON.parse(rawRecords) : [];
+        return Array.isArray(records) ? records : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveRecords(records) {
+      state.records = records;
+      if (storageAvailable) {
+        window.localStorage.setItem(STORAGE_KEYS.records, JSON.stringify(records));
+      }
+    }
+
+    function formatDateTime(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return "未知时间";
+      }
+
+      return date.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    // 随机生成100以内加减法：不出现加0、减0或结果为0的题目。
+    function createProblem() {
+      const isAddition = Math.random() >= 0.5;
+
+      if (isAddition) {
+        const left = randomInt(1, 99);
+        const right = randomInt(1, 100 - left);
+        return {
+          left,
+          right,
+          operator: "+",
+          answer: left + right,
+          text: `${left} + ${right}`
+        };
+      }
+
+      const left = randomInt(2, 100);
+      const right = randomInt(1, left - 1);
+      return {
+        left,
+        right,
+        operator: "-",
+        answer: left - right,
+        text: `${left} - ${right}`
+      };
+    }
+
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    }
+
+    function getAudioContext() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        return null;
+      }
+
+      if (!state.audioContext) {
+        state.audioContext = new AudioContextClass();
+      }
+
+      if (state.audioContext.state === "suspended") {
+        state.audioContext.resume();
+      }
+
+      return state.audioContext;
+    }
+
+    function scheduleTone(ctx, frequency, offset, duration, volume, type = "sine") {
+      const start = ctx.currentTime + offset;
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume, start + 0.018);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.03);
+    }
+
+    function playCorrectSound() {
+      const ctx = getAudioContext();
+      if (!ctx) {
+        return;
+      }
+
+      scheduleTone(ctx, 880, 0, 0.12, 0.09, "sine");
+      scheduleTone(ctx, 1175, 0.1, 0.18, 0.075, "triangle");
+    }
+
+    function playWrongSound() {
+      const ctx = getAudioContext();
+      if (!ctx) {
+        return;
+      }
+
+      scheduleTone(ctx, 190, 0, 0.16, 0.08, "sawtooth");
+      scheduleTone(ctx, 145, 0.18, 0.18, 0.075, "square");
+    }
+
+    function startTimer() {
+      stopTimer();
+      state.startTime = Date.now();
+      state.timerId = window.setInterval(() => {
+        state.elapsedMs = Date.now() - state.startTime;
+        els.timerText.textContent = formatTime(state.elapsedMs);
+      }, 250);
+    }
+
+    function stopTimer() {
+      if (state.timerId) {
+        window.clearInterval(state.timerId);
+        state.timerId = null;
+      }
+    }
+
+    function updateStats() {
+      const answeredCount = state.currentIndex;
+      const remaining = Math.max(state.totalQuestions - state.currentIndex, 0);
+      const displayIndex = Math.min(state.currentIndex + 1, state.totalQuestions);
+
+      els.scoreText.textContent = state.score;
+      els.questionNumber.textContent = `${displayIndex} / ${state.totalQuestions}`;
+      els.remainingText.textContent = remaining;
+      els.progressLine.style.setProperty("--progress", `${(answeredCount / state.totalQuestions) * 100}%`);
+    }
+
+    function renderProblem() {
+      state.currentProblem = createProblem();
+      els.questionText.textContent = state.currentProblem.text;
+      els.questionLabel.textContent = `第 ${state.currentIndex + 1} 题`;
+      els.answerInput.value = "";
+      els.feedbackText.textContent = "按回车提交，按空格跳过";
+      els.feedbackText.className = "feedback";
+      els.answerInput.focus();
+      updateStats();
+    }
+
+    function setControlsDisabled(disabled) {
+      state.isLocked = disabled;
+      els.submitBtn.disabled = disabled;
+      els.skipBtn.disabled = disabled;
+      els.answerInput.disabled = disabled;
+    }
+
+    function selectQuestionCount(count) {
+      if (state.isStarted) {
+        return;
+      }
+
+      state.totalQuestions = count;
+      els.startTitle.textContent = `${count}道题计时挑战`;
+      updateStats();
+
+      els.countOptions.querySelectorAll(".count-option").forEach((button) => {
+        const isActive = Number(button.dataset.count) === count;
+        button.classList.toggle("active", isActive);
+      });
+    }
+
+    function startPractice() {
+      if (state.isStarted) {
+        return;
+      }
+
+      state.isStarted = true;
+      els.startScreen.classList.add("hidden");
+      els.quizContent.classList.remove("hidden");
+      setControlsDisabled(false);
+      startTimer();
+      renderProblem();
+    }
+
+    function playFeedback(type) {
+      const className = type === "ok" ? "correct-flash" : "wrong-shake";
+      els.practicePanel.classList.remove("correct-flash", "wrong-shake");
+      void els.practicePanel.offsetWidth;
+      els.practicePanel.classList.add(className);
+    }
+
+    function goNext(delay = 540) {
+      setControlsDisabled(true);
+      state.transitionTimerId = window.setTimeout(() => {
+        state.transitionTimerId = null;
+        state.currentIndex += 1;
+        setControlsDisabled(false);
+
+        if (state.currentIndex >= state.totalQuestions) {
+          finishPractice();
+        } else {
+          renderProblem();
+        }
+      }, delay);
+    }
+
+    function submitAnswer() {
+      if (!state.isStarted || state.isLocked || !state.currentProblem) {
+        return;
+      }
+
+      const rawValue = els.answerInput.value.trim();
+      if (rawValue === "") {
+        els.feedbackText.textContent = "先输入答案再提交";
+        els.feedbackText.className = "feedback bad";
+        playFeedback("bad");
+        els.answerInput.focus();
+        return;
+      }
+
+      const userAnswer = Number(rawValue);
+      const isCorrect = Number.isInteger(userAnswer) && userAnswer === state.currentProblem.answer;
+
+      if (isCorrect) {
+        state.score += SCORE_PER_CORRECT;
+        state.correctCount += 1;
+        playCorrectSound();
+        els.feedbackText.textContent = "答对了！+10分";
+        els.feedbackText.className = "feedback ok";
+        playFeedback("ok");
+      } else {
+        state.wrongCount += 1;
+        state.reviewItems.push({
+          type: "wrong",
+          index: state.currentIndex + 1,
+          question: state.currentProblem.text,
+          correctAnswer: state.currentProblem.answer,
+          userAnswer: rawValue
+        });
+        playWrongSound();
+        els.feedbackText.textContent = `答案是 ${state.currentProblem.answer}`;
+        els.feedbackText.className = "feedback bad";
+        playFeedback("bad");
+      }
+
+      updateStats();
+      goNext();
+    }
+
+    function skipProblem() {
+      if (!state.isStarted || state.isLocked || !state.currentProblem) {
+        return;
+      }
+
+      state.skippedCount += 1;
+      state.reviewItems.push({
+        type: "skipped",
+        index: state.currentIndex + 1,
+        question: state.currentProblem.text,
+        correctAnswer: state.currentProblem.answer,
+        userAnswer: "未作答"
+      });
+      els.feedbackText.textContent = `已跳过，答案是 ${state.currentProblem.answer}`;
+      els.feedbackText.className = "feedback bad";
+      playFeedback("bad");
+      goNext();
+    }
+
+    function createPracticeRecord(accuracy) {
+      return {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        username: state.username,
+        completedAt: new Date().toISOString(),
+        totalQuestions: state.totalQuestions,
+        score: state.score,
+        accuracy,
+        elapsedMs: state.elapsedMs,
+        correctCount: state.correctCount,
+        wrongCount: state.wrongCount,
+        skippedCount: state.skippedCount,
+        reviewItems: state.reviewItems.map((item) => ({ ...item }))
+      };
+    }
+
+    function getResultFeedback(accuracy) {
+      if (accuracy === 100) {
+        return {
+          badge: "满分完成",
+          remark: "无懈可击",
+          className: "perfect"
+        };
+      }
+
+      if (accuracy >= 90) {
+        return {
+          badge: "接近满分",
+          remark: "就差一点了",
+          className: "near"
+        };
+      }
+
+      if (accuracy >= 60) {
+        return {
+          badge: "继续练习",
+          remark: "再接再厉",
+          className: "steady"
+        };
+      }
+
+      return {
+        badge: "打起精神",
+        remark: "打起精神来",
+        className: "low"
+      };
+    }
+
+    function finishPractice() {
+      stopTimer();
+      state.isStarted = false;
+      state.elapsedMs = Date.now() - state.startTime;
+      els.practicePanel.classList.add("hidden");
+      els.resultPanel.classList.add("active");
+      els.progressLine.style.setProperty("--progress", "100%");
+
+      const accuracy = Math.round((state.correctCount / state.totalQuestions) * 100);
+      els.finalScore.textContent = state.score;
+      els.accuracyText.textContent = `${accuracy}%`;
+      els.finalTime.textContent = formatTime(state.elapsedMs);
+      els.missedText.textContent = `${state.wrongCount} / ${state.skippedCount}`;
+      saveRecords([createPracticeRecord(accuracy), ...state.records]);
+      const feedback = getResultFeedback(accuracy);
+
+      els.resultBadge.textContent = feedback.badge;
+      els.resultTitle.textContent = feedback.remark;
+      els.resultTitle.className = `result-remark ${feedback.className}`;
+
+      renderReview();
+    }
+
+    function renderReviewItems(container, items, emptyText) {
+      container.innerHTML = "";
+
+      if (items.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "review-empty";
+        empty.textContent = emptyText;
+        container.appendChild(empty);
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = `review-card ${item.type === "skipped" ? "skipped" : ""}`;
+
+        const index = document.createElement("div");
+        index.className = "review-index";
+        index.textContent = item.index;
+
+        const main = document.createElement("div");
+        main.className = "review-main";
+
+        const question = document.createElement("div");
+        question.className = "review-question";
+        question.textContent = `${item.question} = ${item.correctAnswer}`;
+
+        const answer = document.createElement("div");
+        answer.className = "review-answer";
+        answer.textContent = `你的答案：${item.userAnswer}`;
+
+        const tag = document.createElement("div");
+        tag.className = "review-tag";
+        tag.textContent = item.type === "skipped" ? "跳过" : "答错";
+
+        main.append(question, answer);
+        card.append(index, main, tag);
+        container.appendChild(card);
+      });
+    }
+
+    function renderReview() {
+      renderReviewItems(els.reviewList, state.reviewItems, "全部答对，没有错题。");
+    }
+
+    function getCurrentUserRecords() {
+      return state.records.filter((record) => record.username === state.username);
+    }
+
+    function renderUserIdentity(message = "当前练习会记录到这个用户名下面。") {
+      els.currentUserText.textContent = state.username;
+      els.usernameInput.value = state.username;
+      els.userMessage.textContent = message;
+    }
+
+    function renderHistoryList() {
+      const records = getCurrentUserRecords();
+      els.historyList.innerHTML = "";
+      els.historyCountText.textContent = `${records.length} 条记录`;
+
+      if (records.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "history-empty";
+        empty.textContent = "还没有练习记录。完成一组题后，这里会自动保存成绩。";
+        els.historyList.appendChild(empty);
+        return;
+      }
+
+      records.forEach((record) => {
+        const item = document.createElement("button");
+        item.className = "history-item";
+        item.type = "button";
+        item.dataset.recordId = record.id;
+
+        const main = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "history-title";
+        title.textContent = `${record.totalQuestions}题练习 · ${formatDateTime(record.completedAt)}`;
+
+        const sub = document.createElement("div");
+        sub.className = "history-sub";
+        sub.textContent = `正确 ${record.correctCount} 题，错 ${record.wrongCount} 题，跳 ${record.skippedCount} 题`;
+
+        const score = document.createElement("div");
+        score.className = "history-score";
+        score.innerHTML = `<strong>${record.score}分</strong><span>${record.accuracy}% · ${formatTime(record.elapsedMs)}</span>`;
+
+        main.append(title, sub);
+        item.append(main, score);
+        els.historyList.appendChild(item);
+      });
+    }
+
+    function showRecordDetail(recordId) {
+      const record = state.records.find((item) => item.id === recordId && item.username === state.username);
+      if (!record) {
+        return;
+      }
+
+      els.recordDetail.classList.add("active");
+      els.detailBadge.textContent = `${record.totalQuestions}题记录`;
+      els.detailTitle.textContent = `${formatDateTime(record.completedAt)} 的练习`;
+      els.detailMeta.textContent = `用户名：${record.username}`;
+      els.detailScore.textContent = record.score;
+      els.detailAccuracy.textContent = `${record.accuracy}%`;
+      els.detailTime.textContent = formatTime(record.elapsedMs);
+      els.detailMissed.textContent = `${record.wrongCount} / ${record.skippedCount}`;
+      renderReviewItems(els.detailReview, record.reviewItems || [], "这次没有错题或跳题。");
+      els.recordDetail.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function hideRecordDetail() {
+      els.recordDetail.classList.remove("active");
+    }
+
+    function showUserPage() {
+      renderUserIdentity();
+      renderHistoryList();
+      hideRecordDetail();
+      els.practicePanel.classList.add("view-hidden");
+      els.resultPanel.classList.add("view-hidden");
+      els.userPanel.classList.add("active");
+    }
+
+    function hideUserPage() {
+      els.userPanel.classList.remove("active");
+      els.practicePanel.classList.remove("view-hidden");
+      els.resultPanel.classList.remove("view-hidden");
+    }
+
+    function saveCurrentUsername() {
+      const nextName = els.usernameInput.value.trim() || DEFAULT_USERNAME;
+      state.username = nextName.slice(0, 20);
+      saveUsername(state.username);
+      renderUserIdentity("用户名已保存。");
+      renderHistoryList();
+      hideRecordDetail();
+    }
+
+    function resetPractice() {
+      stopTimer();
+      if (state.transitionTimerId) {
+        window.clearTimeout(state.transitionTimerId);
+        state.transitionTimerId = null;
+      }
+      state.currentIndex = 0;
+      state.score = 0;
+      state.correctCount = 0;
+      state.wrongCount = 0;
+      state.skippedCount = 0;
+      state.currentProblem = null;
+      state.reviewItems = [];
+      state.elapsedMs = 0;
+      state.isStarted = false;
+      state.isLocked = false;
+
+      els.practicePanel.classList.remove("hidden", "correct-flash", "wrong-shake");
+      els.practicePanel.classList.remove("view-hidden");
+      els.resultPanel.classList.remove("active");
+      els.resultPanel.classList.remove("view-hidden");
+      els.userPanel.classList.remove("active");
+      hideRecordDetail();
+      els.startScreen.classList.remove("hidden");
+      els.quizContent.classList.add("hidden");
+      els.timerText.textContent = "00:00";
+      els.questionLabel.textContent = "请计算下面这道题";
+      els.questionText.textContent = "0 + 0";
+      els.feedbackText.textContent = "按回车提交，按空格跳过";
+      els.feedbackText.className = "feedback";
+      els.resultTitle.textContent = "这组题完成啦";
+      els.resultTitle.className = "result-remark";
+      els.answerInput.value = "";
+      updateStats();
+      setControlsDisabled(true);
+    }
+
+    els.countOptions.addEventListener("click", (event) => {
+      const button = event.target.closest(".count-option");
+      if (!button) {
+        return;
+      }
+
+      selectQuestionCount(Number(button.dataset.count));
+    });
+
+    els.startBtn.addEventListener("click", startPractice);
+    els.submitBtn.addEventListener("click", submitAnswer);
+    els.skipBtn.addEventListener("click", skipProblem);
+    els.userPageBtn.addEventListener("click", showUserPage);
+    els.backPracticeBtn.addEventListener("click", hideUserPage);
+    els.saveUserBtn.addEventListener("click", saveCurrentUsername);
+    els.closeDetailBtn.addEventListener("click", hideRecordDetail);
+    els.usernameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        saveCurrentUsername();
+      }
+    });
+    els.historyList.addEventListener("click", (event) => {
+      const item = event.target.closest(".history-item");
+      if (item) {
+        showRecordDetail(item.dataset.recordId);
+      }
+    });
+    els.restartTop.addEventListener("click", resetPractice);
+    els.restartResult.addEventListener("click", resetPractice);
+
+    document.addEventListener("keydown", (event) => {
+      if (els.userPanel.classList.contains("active")) {
+        return;
+      }
+
+      if (els.resultPanel.classList.contains("active")) {
+        return;
+      }
+
+      if (!state.isStarted) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          startPractice();
+        }
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        submitAnswer();
+      }
+
+      if (event.code === "Space") {
+        event.preventDefault();
+        skipProblem();
+      }
+    });
+
+    state.username = loadUsername();
+    state.records = loadRecords();
+    renderUserIdentity();
+    resetPractice();
+  </script>
+</body>
+</html>
+

@@ -1317,6 +1317,16 @@
       return state.audioContext;
     }
 
+    function unlockAudio() {
+      const ctx = getAudioContext();
+      if (!ctx) {
+        return;
+      }
+
+      // 部分浏览器需要在用户点击后播放一次极短静音，后续答题音效才稳定。
+      scheduleTone(ctx, 440, 0, 0.025, 0.0001, "sine");
+    }
+
     function scheduleTone(ctx, frequency, offset, duration, volume, type = "sine") {
       const start = ctx.currentTime + offset;
       const oscillator = ctx.createOscillator();
@@ -1422,6 +1432,7 @@
       state.isStarted = true;
       els.startScreen.classList.add("hidden");
       els.quizContent.classList.remove("hidden");
+      unlockAudio();
       setControlsDisabled(false);
       startTimer();
       renderProblem();

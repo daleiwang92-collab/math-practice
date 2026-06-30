@@ -264,6 +264,10 @@
       font-size: 20px;
     }
 
+    .quiz-content {
+      position: relative;
+    }
+
     .quiz-content.hidden {
       display: none;
     }
@@ -380,12 +384,13 @@
     .actions {
       margin-top: clamp(22px, 4vw, 34px);
       display: grid;
-      grid-template-columns: 1.45fr 1fr;
+      grid-template-columns: 1.35fr 0.86fr 1fr;
       gap: 12px;
     }
 
     .primary,
-    .secondary {
+    .secondary,
+    .pause-action {
       min-height: 56px;
       border-radius: 14px;
       font-size: 18px;
@@ -411,6 +416,78 @@
 
     .secondary:hover {
       background: #e5eef8;
+    }
+
+    .pause-action {
+      color: #7a4d00;
+      background: #fff2d3;
+      border: 1px solid #f1d69a;
+    }
+
+    .pause-action:hover {
+      background: #ffe8b4;
+    }
+
+    .pause-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      border-radius: 16px;
+      background: rgba(247, 251, 255, 0.84);
+      backdrop-filter: blur(10px);
+    }
+
+    .pause-overlay.hidden {
+      display: none;
+    }
+
+    .pause-card {
+      width: min(100%, 430px);
+      display: grid;
+      justify-items: center;
+      gap: 14px;
+      padding: clamp(22px, 5vw, 34px);
+      border: 1px solid rgba(220, 231, 244, 0.96);
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 24px 70px rgba(43, 76, 126, 0.18);
+      text-align: center;
+    }
+
+    .pause-card h2 {
+      margin: 0;
+      font-size: clamp(28px, 6vw, 44px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .pause-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .pause-time {
+      width: 100%;
+      padding: 12px;
+      color: var(--muted);
+      font-weight: 800;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f9fcff;
+    }
+
+    .pause-time strong {
+      margin-left: 6px;
+      color: var(--ink);
+      font-size: 22px;
+    }
+
+    .pause-card .primary {
+      width: min(100%, 260px);
     }
 
     .hint {
@@ -1019,9 +1096,20 @@
 
         <div class="actions">
           <button class="primary" id="submitBtn" type="button">提交答案</button>
+          <button class="pause-action" id="pauseBtn" type="button">暂停练习</button>
           <button class="secondary" id="skipBtn" type="button">跳过本题</button>
         </div>
         <p class="hint">键盘支持：Enter 提交，Space 跳过</p>
+
+        <div class="pause-overlay hidden" id="pauseOverlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+          <div class="pause-card">
+            <div class="badge">已暂停</div>
+            <h2 id="pauseTitle">先歇一口气</h2>
+            <p>当前题目和已输入的答案会保留，计时器已经停下。</p>
+            <div class="pause-time">当前用时 <strong id="pauseTimeText">00:00</strong></div>
+            <button class="primary" id="resumeBtn" type="button">继续练习</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1146,6 +1234,7 @@
       username: DEFAULT_USERNAME,
       records: [],
       isStarted: false,
+      isPaused: false,
       isLocked: false
     };
 
@@ -1167,6 +1256,10 @@
       feedbackText: document.getElementById("feedbackText"),
       startBtn: document.getElementById("startBtn"),
       submitBtn: document.getElementById("submitBtn"),
+      pauseBtn: document.getElementById("pauseBtn"),
+      resumeBtn: document.getElementById("resumeBtn"),
+      pauseOverlay: document.getElementById("pauseOverlay"),
+      pauseTimeText: document.getElementById("pauseTimeText"),
       skipBtn: document.getElementById("skipBtn"),
       currentUserText: document.getElementById("currentUserText"),
       userPageBtn: document.getElementById("userPageBtn"),
@@ -1366,11 +1459,12 @@
 
     function startTimer() {
       stopTimer();
-      state.startTime = Date.now();
+      state.startTime = Date.now() - state.elapsedMs;
       state.timerId = window.setInterval(() => {
         state.elapsedMs = Date.now() - state.startTime;
         els.timerText.textContent = formatTime(state.elapsedMs);
       }, 250);
+      els.timerText.textContent = formatTime(state.elapsedMs);
     }
 
     function stopTimer() {
@@ -1405,6 +1499,7 @@
     function setControlsDisabled(disabled) {
       state.isLocked = disabled;
       els.submitBtn.disabled = disabled;
+      els.pauseBtn.disabled = disabled;
       els.skipBtn.disabled = disabled;
       els.answerInput.disabled = disabled;
     }
@@ -1430,12 +1525,43 @@
       }
 
       state.isStarted = true;
+      state.isPaused = false;
       els.startScreen.classList.add("hidden");
       els.quizContent.classList.remove("hidden");
+      els.pauseOverlay.classList.add("hidden");
       unlockAudio();
       setControlsDisabled(false);
       startTimer();
       renderProblem();
+    }
+
+    function pausePractice() {
+      if (!state.isStarted || state.isPaused || state.isLocked) {
+        return;
+      }
+
+      state.elapsedMs = Date.now() - state.startTime;
+      stopTimer();
+      state.isPaused = true;
+      els.pauseTimeText.textContent = formatTime(state.elapsedMs);
+      els.pauseOverlay.classList.remove("hidden");
+      els.feedbackText.textContent = "练习已暂停";
+      els.feedbackText.className = "feedback";
+      setControlsDisabled(true);
+    }
+
+    function resumePractice() {
+      if (!state.isStarted || !state.isPaused) {
+        return;
+      }
+
+      state.isPaused = false;
+      els.pauseOverlay.classList.add("hidden");
+      els.feedbackText.textContent = "按回车提交，按空格跳过";
+      els.feedbackText.className = "feedback";
+      setControlsDisabled(false);
+      startTimer();
+      els.answerInput.focus();
     }
 
     function playFeedback(type) {
@@ -1461,7 +1587,7 @@
     }
 
     function submitAnswer() {
-      if (!state.isStarted || state.isLocked || !state.currentProblem) {
+      if (!state.isStarted || state.isPaused || state.isLocked || !state.currentProblem) {
         return;
       }
 
@@ -1504,7 +1630,7 @@
     }
 
     function skipProblem() {
-      if (!state.isStarted || state.isLocked || !state.currentProblem) {
+      if (!state.isStarted || state.isPaused || state.isLocked || !state.currentProblem) {
         return;
       }
 
@@ -1573,9 +1699,11 @@
     function finishPractice() {
       stopTimer();
       state.isStarted = false;
+      state.isPaused = false;
       state.elapsedMs = Date.now() - state.startTime;
       els.practicePanel.classList.add("hidden");
       els.resultPanel.classList.add("active");
+      els.pauseOverlay.classList.add("hidden");
       els.progressLine.style.setProperty("--progress", "100%");
 
       const accuracy = Math.round((state.correctCount / state.totalQuestions) * 100);
@@ -1708,6 +1836,10 @@
     }
 
     function showUserPage() {
+      if (state.isStarted && !state.isPaused) {
+        pausePractice();
+      }
+
       renderUserIdentity();
       renderHistoryList();
       hideRecordDetail();
@@ -1746,6 +1878,7 @@
       state.reviewItems = [];
       state.elapsedMs = 0;
       state.isStarted = false;
+      state.isPaused = false;
       state.isLocked = false;
 
       els.practicePanel.classList.remove("hidden", "correct-flash", "wrong-shake");
@@ -1756,6 +1889,8 @@
       hideRecordDetail();
       els.startScreen.classList.remove("hidden");
       els.quizContent.classList.add("hidden");
+      els.pauseOverlay.classList.add("hidden");
+      els.pauseTimeText.textContent = "00:00";
       els.timerText.textContent = "00:00";
       els.questionLabel.textContent = "请计算下面这道题";
       els.questionText.textContent = "0 + 0";
@@ -1779,6 +1914,8 @@
 
     els.startBtn.addEventListener("click", startPractice);
     els.submitBtn.addEventListener("click", submitAnswer);
+    els.pauseBtn.addEventListener("click", pausePractice);
+    els.resumeBtn.addEventListener("click", resumePractice);
     els.skipBtn.addEventListener("click", skipProblem);
     els.userPageBtn.addEventListener("click", showUserPage);
     els.backPracticeBtn.addEventListener("click", hideUserPage);
@@ -1805,6 +1942,14 @@
       }
 
       if (els.resultPanel.classList.contains("active")) {
+        return;
+      }
+
+      if (state.isPaused) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          resumePractice();
+        }
         return;
       }
 
